@@ -31,8 +31,7 @@ from os.path import join as path_join
 
 import dbus.service
 from dbus.mainloop.glib import DBusGMainLoop
-from fuzzywuzzy import fuzz
-from fuzzywuzzy import process
+from fuzzyfinder import fuzzyfinder
 from gi.repository import GLib
 
 # Convenience shorthand for declaring dbus interface methods.
@@ -105,13 +104,7 @@ class SearchPassService(dbus.service.Object):
             ["rbw", "list"], stderr=subprocess.STDOUT, universal_newlines=True
         ).split("\n")[:-1]
 
-        results = [
-            e[0]
-            for e in process.extract(
-                name, password_list, limit=5, scorer=fuzz.partial_ratio
-            )
-        ]
-        return results
+        return list(fuzzyfinder(name, password_list))
 
     def get_pass_result_set(self, terms):
         if terms[0] == "otp":
@@ -136,12 +129,7 @@ class SearchPassService(dbus.service.Object):
                 path = path_join(dir_path, filename)[:-4]
                 password_list.append(path)
 
-        results = [
-            e[0]
-            for e in process.extract(
-                name, password_list, limit=5, scorer=fuzz.partial_ratio
-            )
-        ]
+        results = list(fuzzyfinder(name, password_list))
         if field == "otp":
             results = [f"otp {r}" for r in results]
         elif field is not None:
